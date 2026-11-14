@@ -1,60 +1,121 @@
-Phone damage check
+<div align="center">
 
-A browser app that opens your camera and tells you whether a phone looks okay or damaged, in real time. Everything runs in the browser, and no video is uploaded.
+# 📱 Phone damage check
 
-Live demo: YOUR-PAGES-LINK (use Chrome or Edge; allow camera access)
+**Point your camera at a phone and see in real time whether it looks okay or damaged.**
+Runs entirely in your browser. No video is uploaded.
 
-This is a student project, not a certified inspection tool.
+[![Live demo](https://img.shields.io/badge/Live%20demo-open%20the%20app-2fbf8a?style=for-the-badge)](https://15sarvagya.github.io/phone-damage-check/)
 
-How it works
-A pretrained YOLOv8n (COCO, class cell phone) finds the phone in the frame. It runs every 4th frame.
-A YOLOv8n model fine-tuned by me detects crack, scratch and display_defect on the cropped phone.
-The page shows OK, Not okay, or "No phone detected". The verdict is smoothed over recent frames (damage in 2 of the last 6) so it does not flicker.
-Both models are exported to ONNX and run with ONNX Runtime Web (WebGPU when available, WebAssembly otherwise).
-Data
+![YOLOv8n](https://img.shields.io/badge/model-YOLOv8n-14202b)
+![ONNX Runtime Web](https://img.shields.io/badge/runtime-ONNX%20Runtime%20Web-5b6b7a)
+![WebGPU](https://img.shields.io/badge/accelerated-WebGPU-2fbf8a)
+![Student project](https://img.shields.io/badge/status-student%20project-d12f2f)
 
-Public datasets from Roboflow Universe only. I downloaded three, then cleaned them:
+[![Screenshot of the app flagging a crack](docs/demo.png)](https://15sarvagya.github.io/phone-damage-check/)
 
-Mobile Damage Diagnosis turned out to contain the same 1,901 images as the Mobile phone detection (Sengital) set (checked with perceptual hashing), so I dropped it to avoid double counting.
-Crackedscreen provided undamaged phones. Its images labelled "broken phone" were dropped, because they would have become wrong "no damage" examples.
-Labels were merged into 3 classes: crack, scratch, display_defect.
-1,974 images became 1,884 after near-duplicate removal. The split is 1,507 train, 188 validation, 189 test, built with a fixed seed. The exact assignment is in splits.json.
+*Click the screenshot to open the live app (Chrome or Edge, allow camera access).*
 
-Dataset licenses and sources: see each dataset's page on Roboflow Universe. TODO: add the exact license line for each dataset here.
+</div>
 
-Results (held-out test split, 189 images)
+> [!NOTE]
+> This is a learning project, not a certified inspection tool. See the limitations below.
 
-Model: YOLOv8n, 50 epochs, 640 px, seed 42.
+## 🔍 How it works
 
-Class	Precision	Recall	mAP50
-all	0.776	0.556	0.635
-crack	0.755	0.471	0.559
-scratch	0.774	0.635	0.667
-display_defect	0.798	0.561	0.681
+```mermaid
+flowchart LR
+  A["Camera frame"] --> B["Phone detector<br/>YOLOv8n, COCO"]
+  B -->|phone found| C["Crop the phone"]
+  B -->|no phone box| X["Full-frame damage check<br/>threshold 0.40"]
+  C --> D["Damage detector<br/>YOLOv8n, fine-tuned"]
+  D --> E{"Damage in 2 of<br/>the last 6 frames?"}
+  X -->|nothing found| N["No phone detected"]
+  X -->|damage found| E
+  E -->|yes| F["Not okay"]
+  E -->|no| G["Okay"]
+```
 
-Image-level verdict (NOT OK if any box passes the confidence threshold), at threshold 0.25:
+- The phone detector runs every 4th frame, and its last box is reused in between.
+- The verdict is smoothed over recent frames so it does not flicker.
+- Both models are exported to ONNX and run with ONNX Runtime Web, on WebGPU when available and WebAssembly otherwise.
 
-Damaged phones flagged: 137 of 149
-Undamaged phones passed: 35 of 40
+## 📊 Results
 
-The undamaged set is small (40 images), so that second number is rough. The ONNX export scored 0.659 mAP50 on the same test split when evaluated one image at a time, close to the PyTorch result.
+![Results chart](docs/results.png)
 
-Speed
+Held-out test split of 189 images (149 damaged, 40 undamaged). Model: YOLOv8n, 50 epochs, 640 px, seed 42.
 
-On my laptop in Chrome with WebGPU, the page runs at about 66 to 77 ms per frame (13 to 15 frames per second). Without WebGPU, an earlier version that ran both models on the CPU took about 750 to 800 ms per frame. Speed depends on the device and browser. I have not yet tested on phones.
+| Class | Precision | Recall | mAP50 |
+|---|---|---|---|
+| all | 0.776 | 0.556 | 0.635 |
+| crack | 0.755 | 0.471 | 0.559 |
+| scratch | 0.774 | 0.635 | 0.667 |
+| display_defect | 0.798 | 0.561 | 0.681 |
 
-Limitations
-Crack recall is the weak point (0.47). The model misses small and faint cracks.
-Most training images are product-style photos, and some are mosaic-augmented by the original dataset authors. Dim light and cluttered backgrounds will do worse than the test numbers suggest.
-I tried 960 px training. It raised mAP slightly on an earlier split but did not improve the OK / NOT OK verdict, so I shipped the faster 640 model. That comparison was not rerun on the final split.
-The page checks one phone at a time.
-Run it locally
+At the 0.25 verdict threshold, the app flagged 137 of 149 damaged phones and passed 35 of 40 undamaged ones. With only 40 undamaged images, the second number is rough. The ONNX export scored 0.659 mAP50 on the same split when evaluated one image at a time.
+
+## ⚡ Speed
+
+| Setup | Time per frame |
+|---|---|
+| Chrome with WebGPU (my laptop) | about 66 to 77 ms (13 to 15 frames per second) |
+| Earlier version, both models on the CPU | about 750 to 800 ms |
+
+Speed depends on the device and browser. I have not tested on phones yet.
+
+<details>
+<summary><b>🗂️ Data and cleaning (click to expand)</b></summary>
+
+<br>
+
+Public datasets from Roboflow Universe only.
+
+- **Mobile Damage Diagnosis** turned out to contain the same 1,901 images as **Mobile phone detection (Sengital)** (checked with perceptual hashing), so I dropped it to avoid double counting.
+- **Crackedscreen** provided undamaged phones. Its images labelled "broken phone" were dropped, because they would have become wrong "no damage" examples.
+- Labels were merged into 3 classes: `crack`, `scratch`, `display_defect`.
+- 1,974 images became 1,884 after near-duplicate removal. The split is 1,507 train, 188 validation, 189 test, with a fixed seed. The exact assignment is in `splits.json`.
+
+Licenses and sources: see each dataset's page on Roboflow Universe. TODO: add the exact license line for each dataset here.
+
+</details>
+
+<details>
+<summary><b>⚠️ Limitations (click to expand)</b></summary>
+
+<br>
+
+- Crack recall is the weak point (0.47). The model misses small and faint cracks.
+- Most training images are product-style photos, and some are mosaic-augmented by the original dataset authors. Dim light and cluttered backgrounds will do worse than the test numbers suggest.
+- I tried 960 px training. It raised mAP slightly on an earlier split but did not improve the OK / NOT OK verdict, so I shipped the faster 640 model. That comparison was not rerun on the final split.
+- The page checks one phone at a time.
+
+</details>
+
+<details>
+<summary><b>💻 Run it locally (click to expand)</b></summary>
+
+<br>
+
+```
 python -m http.server 8000
+```
 
-Then open http://localhost:8000 in Chrome. The page needs the models/ folder next to index.html.
+Then open http://localhost:8000 in Chrome. The page needs the `models/` folder next to `index.html`.
 
-Files
-index.html: the app
-models/damage_640.onnx: damage detector
-models/phone_coco_640.onnx: pretrained COCO phone detector
-splits.json: train / validation / test assignment
+</details>
+
+<details>
+<summary><b>📁 Files (click to expand)</b></summary>
+
+<br>
+
+| File | What it is |
+|---|---|
+| `index.html` | The app |
+| `models/damage_640.onnx` | Damage detector (fine-tuned) |
+| `models/phone_coco_640.onnx` | Pretrained COCO phone detector |
+| `splits.json` | Train / validation / test assignment |
+| `docs/` | Screenshot and results chart used in this README |
+
+</details>
