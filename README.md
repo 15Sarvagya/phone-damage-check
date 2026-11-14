@@ -12,7 +12,7 @@ Runs entirely in your browser. No video is uploaded.
 ![WebGPU](https://img.shields.io/badge/accelerated-WebGPU-2fbf8a)
 ![Student project](https://img.shields.io/badge/status-student%20project-d12f2f)
 
-[![Screenshot of the app flagging a crack](docs/demo.png)](https://15sarvagya.github.io/phone-damage-check/)
+[![Screenshot of the app flagging a crack](demo.png)](https://15sarvagya.github.io/phone-damage-check/)
 
 *Click the screenshot to open the live app (Chrome or Edge, allow camera access).*
 
@@ -42,7 +42,7 @@ flowchart LR
 
 ## 📊 Results
 
-![Results chart](docs/results.png)
+![Results chart](results.png)
 
 Held-out test split of 189 images (149 damaged, 40 undamaged). Model: YOLOv8n, 50 epochs, 640 px, seed 42.
 
