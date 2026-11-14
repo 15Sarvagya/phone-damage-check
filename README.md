@@ -2,7 +2,7 @@
 
 # 📱 Phone damage check
 
-Point your camera at a phone and see in real time whether it looks okay or damaged.
+**Point your camera at a phone and see in real time whether it looks okay or damaged.**
 Runs entirely in your browser. No video is uploaded.
 
 [![Live demo](https://img.shields.io/badge/Live%20demo-open%20the%20app-2fbf8a?style=for-the-badge)](https://15sarvagya.github.io/phone-damage-check/)
